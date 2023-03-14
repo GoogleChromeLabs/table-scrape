@@ -1,0 +1,41 @@
+{
+    "manifest_version": 3,
+    "name": "Table Scrape",
+    "version": "0.0.1",
+    "author": "Clay Smith",
+    "short_name": "Table Scrape",
+    "default_locale": "en",
+    "description": "Scrape from tables.",
+    "icons": {
+      "19": "images/19.png",
+      "32": "images/32.png",
+      "38": "images/38.png",
+      "36": "images/36.png",
+      "64": "images/64.png",
+      "128": "images/128.png"
+    },
+    "permissions": [],
+    "host_permissions": [
+      "https://*.*/*"
+    ],
+    "action": {
+      "default_icon": {
+        "19": "images/19.png",
+        "38": "images/38.png"
+      },
+          "default_popup": "popup.html"
+      },
+    "content_scripts": [
+      {
+        "run_at": "document_start",
+        "matches": [
+          "https://*.*/*"
+        ],
+        "exclude_matches": [],
+        "js": [
+          "contentscript.js"
+        ]
+      }
+    ]
+  }
+  

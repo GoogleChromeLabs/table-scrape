@@ -1,0 +1,18 @@
+{
+    "appName":{
+        "message": "Google Admin Scrape",
+        "description": "outside of your domain phrase"
+      },
+    "next":{
+      "message":"next",
+      "description": "Label for next page button"
+    },
+    "export":{
+      "message":"Export Table",
+      "description":"Button label to export the table"
+    },
+    "test":{
+     "message":"<a href=\"google.com\">google</a>"
+    }
+}
+    
