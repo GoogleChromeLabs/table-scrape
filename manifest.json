@@ -16,7 +16,7 @@
     },
     "permissions": [],
     "host_permissions": [
-      "https://*.*/*"
+      "https://*/*"
     ],
     "action": {
       "default_icon": {
@@ -29,7 +29,7 @@
       {
         "run_at": "document_start",
         "matches": [
-          "https://*.*/*"
+          "https://*/*"
         ],
         "exclude_matches": [],
         "js": [
