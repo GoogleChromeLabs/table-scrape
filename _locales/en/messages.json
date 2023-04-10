@@ -10,6 +10,10 @@
     "export":{
       "message":"Export Table",
       "description":"Button label to export the table"
+    },
+    "stop":{
+      "message":"Stop",
+      "description":"Button label to export the table"
     }
 }
     

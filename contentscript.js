@@ -12,7 +12,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License. */
 
-const TAGS = ['TBODY']
+const TAGS = ['TBODY'];
+let exporting = false;
+let data = [];
+let observer;
 
 /**
  * Message passing listener
@@ -21,17 +24,37 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type == 'loadData') {
     getData()
   }
+  if (request.type == 'stopExport') {
+    stopExport()
+  }
+  if (request.type == 'updated') {
+    stopExport()
+  }
 })
+
+/**
+ * Stop the data export
+ */
+function stopExport() {
+  const filename = window.location.pathname.replace(/\//g, '_')
+  sendForExport(data, filename)
+  reset()
+  if (observer) {
+    observer.disconnect()
+    observer = undefined
+  }
+}
 
 /**
  * Retrieves the data on the first encountered table of the page.
  */
 async function getData() {
-  let data = []
+  if (exporting) return
+  exporting = true
   const filename = window.location.pathname.replace(/\//g, '_')
   let nextpage = await nextPageButton();
   let disabled = checkDisabled(nextpage)
-  const observer = new MutationObserver(mutations => {
+  observer = new MutationObserver(mutations => {
     mutations.forEach(async (mutation) => {
       nextpage = await nextPageButton();
       disabled = checkDisabled(nextpage)
@@ -40,7 +63,9 @@ async function getData() {
         const rowdata = getTableData('td');
         data.push(...rowdata)
         if (disabled) {
+          if (!data || data.length == 0) return
           sendForExport(data, filename)
+          reset()
           observer.disconnect()
         }
         nextpage.click()
@@ -67,9 +92,17 @@ async function getData() {
 }
 
 /**
+ * Reset the global variables
+ */
+function reset() {
+  data = []
+  exporting = false
+  chrome.storage.local.set({ running: false })
+}
+/**
  * Check that the Node is disabled
  * @param {HTMLElement} node Button node
- * @returns 
+ * @returns
  */
 function checkDisabled(node) {
   let disabled = node.disabled
@@ -90,8 +123,8 @@ async function nextPageButton() {
 
 /**
  * Sends the 2d array of the constructed table to be exported
- * @param {Array[]} data 
- * @param {string} filename 
+ * @param {Array[]} data
+ * @param {string} filename
  */
 function sendForExport(data, filename) {
   const timestamp = new Date().toUTCString()
@@ -121,7 +154,7 @@ function exportBlob(blob = { name: 'export.csv', buffers: '', mime: "application
 /**
  * Gets the Table data and returns as a 2d array
  * @param {string} cellType Cell type as th or td to return the header or the cells
- * @returns 
+ * @returns
  */
 function getTableData(cellType = 'td') {
   const tableData = [];
@@ -141,7 +174,7 @@ function getTableData(cellType = 'td') {
 /**
  * Find the Next button node
  * @param {string} text Button text to search for
- * @returns 
+ * @returns
  */
 async function findRoleButtonByText(text) {
   const roleButtons = [...document.querySelectorAll('[role="button"]')]

@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Table Scrape",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "author": "Clay Smith",
     "short_name": "Table Scrape",
     "default_locale": "en",
@@ -14,7 +14,7 @@
       "64": "images/64.png",
       "128": "images/128.png"
     },
-    "permissions": [],
+    "permissions": ["storage", "tabs", "webNavigation"],
     "host_permissions": [
       "https://*/*"
     ],
@@ -36,6 +36,9 @@
           "contentscript.js"
         ]
       }
-    ]
+    ],
+    "background": {
+      "service_worker": "background.js"
+    }
   }
   
