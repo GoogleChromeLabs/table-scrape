@@ -14,7 +14,7 @@
       "64": "images/64.png",
       "128": "images/128.png"
     },
-    "permissions": ["storage", "tabs", "webNavigation"],
+    "permissions": ["storage", "webNavigation"],
     "host_permissions": [
       "https://*/*"
     ],
