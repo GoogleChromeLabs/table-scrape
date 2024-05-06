@@ -21,14 +21,15 @@ let observer;
  * Message passing listener
  */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log('request', request)
   if (request.type == 'loadData') {
-    getData()
+    getData();
   }
   if (request.type == 'stopExport') {
-    stopExport()
+    stopExport();
   }
   if (request.type == 'updated') {
-    stopExport()
+    stopExport();
   }
 })
 
@@ -57,11 +58,11 @@ async function getData() {
   observer = new MutationObserver(mutations => {
     mutations.forEach(async (mutation) => {
       nextpage = await nextPageButton();
-      disabled = checkDisabled(nextpage)
       const tag = mutation.target.tagName
       if (TAGS.includes(tag)) {
         const rowdata = getTableData('td');
         data.push(...rowdata)
+        disabled = checkDisabled(nextpage)
         if (disabled) {
           if (!data || data.length == 0) return
           sendForExport(data, filename)

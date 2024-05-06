@@ -32,12 +32,13 @@ function getStorage(item) {
  * @param {object} msg message to pass
  */
 async function sendMessage(msg = {}) {
-    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-    const response = await chrome.tabs.sendMessage(tab.id, msg);
+  const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+  console.log(tab.id, msg)
+  await chrome.tabs.sendMessage(tab.id, msg);
 }
 
 /**
- * Listen for Web Navigation and trigger the saving of the file. 
+ * Listen for Web Navigation and trigger the saving of the file.
  */
 chrome.webNavigation.onBeforeNavigate.addListener(async function(e){
     const running = await getStorage('running')

@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Table Scrape",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "author": "Clay Smith",
     "short_name": "Table Scrape",
     "default_locale": "en",
@@ -41,4 +41,3 @@
       "service_worker": "background.js"
     }
   }
-  
