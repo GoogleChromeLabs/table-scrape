@@ -22,6 +22,10 @@ let observer;
  */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log('request', request)
+  if (request.type == 'ping') {
+    sendResponse({ type: 'pong' });
+    return;
+  }
   if (request.type == 'loadData') {
     getData();
   }
@@ -58,6 +62,7 @@ async function getData() {
   observer = new MutationObserver(mutations => {
     mutations.forEach(async (mutation) => {
       nextpage = await nextPageButton();
+      if (!exporting) return;
       const tag = mutation.target.tagName
       if (TAGS.includes(tag)) {
         const rowdata = getTableData('td');
@@ -69,7 +74,7 @@ async function getData() {
           reset()
           observer.disconnect()
         }
-        nextpage.click()
+        simulateClick(nextpage)
       }
     })
   });
@@ -89,7 +94,8 @@ async function getData() {
     observer.disconnect()
     return
   }
-  nextpage.click()
+  if (!exporting) return
+  simulateClick(nextpage)
 }
 
 /**
@@ -106,6 +112,7 @@ function reset() {
  * @returns
  */
 function checkDisabled(node) {
+  if (!node) return true
   let disabled = node.disabled
   if (!disabled) {
     disabled = node.ariaDisabled == 'true'
@@ -173,13 +180,101 @@ function getTableData(cellType = 'td') {
 }
 
 /**
- * Find the Next button node
+ * Checks if an element is likely to be the "Next" pagination button using text, aria-label,
+ * icon font text, and SVG path matching as fallbacks.
+ * @param {HTMLElement} elem 
+ * @param {string} localizedText 
+ * @returns {boolean}
+ */
+function isNextButton(elem, localizedText) {
+  const innerText = (elem.innerText || '').toLowerCase().trim();
+  const ariaLabel = (elem.getAttribute('aria-label') || '').toLowerCase().trim();
+  const title = (elem.getAttribute('title') || '').toLowerCase().trim();
+  const id = (elem.id || '').toLowerCase().trim();
+  const className = (elem.className || '').toLowerCase().trim();
+
+  // 1. Try localized text matching
+  if (localizedText) {
+    const text = localizedText.toLowerCase().trim();
+    if (innerText.includes(text) || ariaLabel.includes(text) || title.includes(text)) {
+      return true;
+    }
+  }
+
+  // 2. English fallbacks
+  if (innerText.includes('next') || ariaLabel.includes('next') || title.includes('next') || id.includes('next') || className.includes('next')) {
+    return true;
+  }
+  
+  // 3. Icon font fallbacks (common material design icons)
+  const iconNames = ['chevron_right', 'navigate_next', 'arrow_forward', 'arrow_right'];
+  for (const iconName of iconNames) {
+    if (innerText.includes(iconName)) {
+      return true;
+    }
+  }
+
+  // 4. SVG path fallbacks for right chevrons / arrows
+  const paths = elem.querySelectorAll('path');
+  for (const path of paths) {
+    const d = path.getAttribute('d') || '';
+    if (
+      d.includes('13.17 12') || 
+      d.includes('7.41 13.17') || 
+      d.includes('8.59 16.59') || 
+      d.includes('10 6l6 6-6 6') ||
+      d.includes('M10 6L8.59 7.41')
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Find the Next button node using text matching & fallback icons.
  * @param {string} text Button text to search for
- * @returns
+ * @returns {HTMLElement|undefined}
  */
 async function findRoleButtonByText(text) {
   const roleButtons = [...document.querySelectorAll('[role="button"]')]
   const buttons = [...document.querySelectorAll('button')]
-  const allButtons = [...roleButtons, buttons]
-  return allButtons.find(elem => (elem.innerText && elem.innerText.toLowerCase().includes(text)) || (elem.getAttribute('aria-label') && elem.getAttribute('aria-label').toLowerCase().includes(text)))
+  const allButtons = [...roleButtons, ...buttons]
+  
+  console.log(`[TableScrape] Searching for next page button (matching term: "${text}"). Found ${allButtons.length} buttons total on page.`);
+
+  const matched = allButtons.find(elem => isNextButton(elem, text));
+
+  if (matched) {
+    console.log(`[TableScrape] Successfully matched Next button:`, matched);
+  } else {
+    console.warn(`[TableScrape] Could not match a Next page button.`);
+    console.log(`[TableScrape] Listing all available buttons to help diagnose:`);
+    allButtons.forEach((elem, idx) => {
+      const ariaLabel = elem.getAttribute('aria-label') || '';
+      const svgPathCount = elem.querySelectorAll('path').length;
+      console.log(`  #${idx}: tag=${elem.tagName}, class="${elem.className}", text="${(elem.innerText || '').trim().substring(0, 30)}", aria-label="${ariaLabel}", paths=${svgPathCount}`);
+    });
+  }
+
+  return matched;
+}
+
+/**
+ * Simulates a complete hardware pointer click sequence (pointerdown -> mousedown -> pointerup -> mouseup -> click)
+ * to trigger stubborn event dispatchers (like Wiz/Jsaction) that standard element.click() fails to activate.
+ * @param {HTMLElement} elem 
+ */
+function simulateClick(elem) {
+  if (!elem) return;
+  const eventOptions = { bubbles: true, cancelable: true, view: window };
+  elem.dispatchEvent(new PointerEvent('pointerdown', { ...eventOptions, pointerType: 'mouse' }));
+  elem.dispatchEvent(new MouseEvent('mousedown', eventOptions));
+  elem.dispatchEvent(new PointerEvent('pointerup', { ...eventOptions, pointerType: 'mouse' }));
+  elem.dispatchEvent(new MouseEvent('mouseup', eventOptions));
+  elem.dispatchEvent(new MouseEvent('click', eventOptions));
+  if (typeof elem.click === 'function') {
+    elem.click();
+  }
 }

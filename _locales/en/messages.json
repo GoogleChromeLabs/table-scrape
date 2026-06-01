@@ -1,6 +1,6 @@
 {
     "appName":{
-        "message": "Google Admin Scrape",
+        "message": "Table Scrape",
         "description": "outside of your domain phrase"
       },
     "next":{
@@ -14,6 +14,18 @@
     "stop":{
       "message":"Stop",
       "description":"Button label to export the table"
+    },
+    "appSubtitle":{
+      "message":"Export multi-page tables to CSV",
+      "description":"Subtitle for the extension"
+    },
+    "statusReady":{
+      "message":"Ready to scrape",
+      "description":"Status message when idle"
+    },
+    "statusScraping":{
+      "message":"Scraping in progress...",
+      "description":"Status message when active"
     }
 }
     

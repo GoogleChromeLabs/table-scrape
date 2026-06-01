@@ -29,12 +29,16 @@ function getStorage(item) {
 
 /**
  * Message passing to the content script
+ * @param {number} tabId tabId to pass message to
  * @param {object} msg message to pass
  */
-async function sendMessage(msg = {}) {
-  const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-  console.log(tab.id, msg)
-  await chrome.tabs.sendMessage(tab.id, msg);
+async function sendMessage(tabId, msg = {}) {
+  console.log(tabId, msg)
+  try {
+    await chrome.tabs.sendMessage(tabId, msg);
+  } catch (err) {
+    console.error("[TableScrape] Error sending background message to tab", tabId, err);
+  }
 }
 
 /**
@@ -42,7 +46,7 @@ async function sendMessage(msg = {}) {
  */
 chrome.webNavigation.onBeforeNavigate.addListener(async function(e){
     const running = await getStorage('running')
-    if (running && running=== e.tabId) {
-        sendMessage({ type: 'updated' })
+    if (running && running === e.tabId) {
+        sendMessage(e.tabId, { type: 'updated' })
     }
 })
