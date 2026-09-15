@@ -12,6 +12,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License. */
 
+// Only execute in the top-level browsing context (b/528742110)
+if (window !== window.top) {
+  // Prevent execution in cross-origin or child iframes
+  throw new Error('[TableScrape] Child frame execution disabled.');
+}
+
 const TAGS = ['TBODY'];
 let exporting = false;
 let data = [];
@@ -160,73 +166,70 @@ function exportBlob(blob = { name: 'export.csv', buffers: '', mime: "application
 }
 
 /**
+ * Sanitize cell text against CSV formula injection and escape per RFC 4180
+ * @param {string} text
+ * @returns {string}
+ */
+function sanitizeCsvCell(text) {
+  if (text == null) return '""';
+  let str = String(text).trim();
+  if (/^[\t\r=+\-@]/.test(str)) {
+    str = "'" + str;
+  }
+  return '"' + str.replace(/"/g, '""') + '"';
+}
+
+/**
  * Gets the Table data and returns as a 2d array
  * @param {string} cellType Cell type as th or td to return the header or the cells
  * @returns
  */
 function getTableData(cellType = 'td') {
   const tableData = [];
-  const table = document.querySelector(`table`)
-  const rows = table.querySelectorAll('tr')
+  const table = document.querySelector(`table`);
+  if (!table) return tableData;
+  const rows = table.querySelectorAll('tr');
   for (const row of rows) {
     const rowData = [];
     for (const [index, column] of row.querySelectorAll(cellType).entries()) {
-      const text = '"' + column.innerText + '"'
-      rowData.push(text)
+      rowData.push(sanitizeCsvCell(column.innerText));
     }
     tableData.push(rowData);
   }
-  return tableData
+  return tableData;
 }
 
 /**
- * Checks if an element is likely to be the "Next" pagination button using text, aria-label,
- * icon font text, and SVG path matching as fallbacks.
+ * Checks if an element is the "Next" pagination button using exact text or aria-label.
+ * Loose substring matching on classes, IDs, and arbitrary SVG paths has been removed
+ * to prevent confused-deputy auto-clicking on untrusted page elements (b/528741931).
  * @param {HTMLElement} elem 
  * @param {string} localizedText 
  * @returns {boolean}
  */
 function isNextButton(elem, localizedText) {
+  if (!elem) return false;
   const innerText = (elem.innerText || '').toLowerCase().trim();
   const ariaLabel = (elem.getAttribute('aria-label') || '').toLowerCase().trim();
   const title = (elem.getAttribute('title') || '').toLowerCase().trim();
-  const id = (elem.id || '').toLowerCase().trim();
-  const className = (elem.className || '').toLowerCase().trim();
 
   // 1. Try localized text matching
   if (localizedText) {
     const text = localizedText.toLowerCase().trim();
-    if (innerText.includes(text) || ariaLabel.includes(text) || title.includes(text)) {
+    if (innerText === text || ariaLabel === text || title === text) {
       return true;
     }
   }
 
-  // 2. English fallbacks
-  if (innerText.includes('next') || ariaLabel.includes('next') || title.includes('next') || id.includes('next') || className.includes('next')) {
+  // 2. Exact English text or aria-label matching
+  if (innerText === 'next' || ariaLabel === 'next' || title === 'next' || ariaLabel === 'next page' || title === 'next page') {
     return true;
   }
   
-  // 3. Icon font fallbacks (common material design icons)
+  // 3. Known standard Material icon ligatures
   const iconNames = ['chevron_right', 'navigate_next', 'arrow_forward', 'arrow_right'];
-  for (const iconName of iconNames) {
-    if (innerText.includes(iconName)) {
-      return true;
-    }
-  }
-
-  // 4. SVG path fallbacks for right chevrons / arrows
-  const paths = elem.querySelectorAll('path');
-  for (const path of paths) {
-    const d = path.getAttribute('d') || '';
-    if (
-      d.includes('13.17 12') || 
-      d.includes('7.41 13.17') || 
-      d.includes('8.59 16.59') || 
-      d.includes('10 6l6 6-6 6') ||
-      d.includes('M10 6L8.59 7.41')
-    ) {
-      return true;
-    }
+  if (iconNames.includes(innerText)) {
+    return true;
   }
 
   return false;

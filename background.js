@@ -35,7 +35,7 @@ function getStorage(item) {
 async function sendMessage(tabId, msg = {}) {
   console.log(tabId, msg)
   try {
-    await chrome.tabs.sendMessage(tabId, msg);
+    await chrome.tabs.sendMessage(tabId, msg, { frameId: 0 });
   } catch (err) {
     console.error("[TableScrape] Error sending background message to tab", tabId, err);
   }
@@ -45,6 +45,7 @@ async function sendMessage(tabId, msg = {}) {
  * Listen for Web Navigation and trigger the saving of the file.
  */
 chrome.webNavigation.onBeforeNavigate.addListener(async function(e){
+    if (e.frameId !== 0) return;
     const running = await getStorage('running')
     if (running && running === e.tabId) {
         sendMessage(e.tabId, { type: 'updated' })

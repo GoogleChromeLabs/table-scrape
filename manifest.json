@@ -33,7 +33,7 @@
           "*://*/*",
           "file://*/*"
         ],
-        "all_frames": true,
+        "all_frames": false,
         "exclude_matches": [],
         "js": [
           "contentscript.js"

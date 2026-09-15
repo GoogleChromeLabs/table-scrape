@@ -61,7 +61,7 @@ async function ensureContentScriptActive(tabId) {
         
         try {
             await chrome.scripting.executeScript({
-                target: { tabId: tabId, allFrames: true },
+                target: { tabId: tabId, allFrames: false },
                 files: ['contentscript.js']
             });
             console.log(`[TableScrape] Programmatic injection successful.`);
@@ -113,7 +113,7 @@ async function sendAMessage(msg = {}) {
             return false;
         }
 
-        await chrome.tabs.sendMessage(tab.id, msg);
+        await chrome.tabs.sendMessage(tab.id, msg, { frameId: 0 });
         return true;
     } catch (error) {
         console.error("[TableScrape] IPC Error:", error);
